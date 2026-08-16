@@ -297,7 +297,9 @@
       g.fillStyle = "rgba(148,163,184,.18)";
       roundRect(g, bx, y + rowH * 0.18, bw, rowH * 0.5, 5); g.fill();
       g.fillStyle = on ? "#fbbf24" : "rgba(251,191,36,.5)";
-      roundRect(g, bx, y + rowH * 0.18, bw * clamp(wh / maxWh, 0.01, 1), rowH * 0.5, 5); g.fill();
+      /* ⚠ 최소 길이(예전 0.01)를 두지 않는다. 12 Wh 짜리 막대가 실제보다
+         30% 길게 그려져, 막대 길이가 값과 어긋났다. 값은 옆에 숫자로도 적힌다. */
+      roundRect(g, bx, y + rowH * 0.18, bw * clamp(wh / maxWh, 0, 1), rowH * 0.5, 5); g.fill();
 
       g.fillStyle = COL.ink; g.font = (on ? "bold " : "") + "15px sans-serif"; g.textAlign = "right";
       g.fillText(fmt(wh) + " Wh", cssW - 12, y + rowH * 0.52);
