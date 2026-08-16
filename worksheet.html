@@ -64,6 +64,22 @@
 
 <div class="wrap">
 
+  <!-- 🔑 선생님용 정답지 — worksheet.html?key 로 열린다. 평소에는 숨어 있다. -->
+  <div id="keyRoot">
+    <div class="print-only print-head">
+      <h1>소비 전력 학습지 · 정답지</h1>
+      <p class="sub">중학교 3학년 과학 · 에너지 전환과 보존 [9과22-03] — 전기 에너지 전환과 소비 전력은? · 선생님용</p>
+    </div>
+    <div class="card no-print keybar">
+      <h2>🔑 정답지</h2>
+      <label><input type="checkbox" id="kQ"> 문제도 함께</label>
+      <label><input type="checkbox" id="kWhy"> 해설도 함께</label>
+      <span class="grow"></span>
+      <a class="btn" href="worksheet.html">← 학생용 학습지</a>
+      <button type="button" class="btn primary" id="kPrint">🖨 인쇄하기</button>
+    </div>
+    <div class="card" id="keySheet"></div>
+  </div>
   <div class="print-only print-head">
     <h1>소비 전력 학습지</h1>
     <p class="sub">중학교 3학년 과학 · 에너지 전환과 보존 [9과22-03] — 전기 에너지 전환과 소비 전력은?</p>
@@ -205,7 +221,13 @@
         { type: "tbl", q: "어느 가정의 가전제품입니다. 하루 <b>전력량(Wh)</b>을 계산해 표를 채우세요.",
           head: ["가전제품", "에너지 전환", "소비 전력 (W)", "사용 시간", "전력량 (Wh)"],
           rows: ["전등 (30 W · 6시간)", "선풍기 (40 W · 10시간)", "다리미 (1000 W · 30분)",
-                 "스피커 (800 W · 2시간)", "배터리충전기 (6 W · 2시간)"] },
+                 "스피커 (800 W · 2시간)", "배터리충전기 (6 W · 2시간)"],
+          /* 전력량(Wh) = 소비 전력(W) × 사용 시간(h). 30분은 0.5시간이다. */
+          keyAns: [["전기 → 빛", "30", "6시간", "180"],
+                   ["전기 → 운동", "40", "10시간", "400"],
+                   ["전기 → 열", "1000", "0.5시간", "500"],
+                   ["전기 → 소리", "800", "2시간", "1600"],
+                   ["전기 → 화학", "6", "2시간", "12"]] },
         { type: "choice", q: "위 표에서 <b>하루 전력량</b>이 가장 큰 가전제품은?",
           opts: ["다리미 (1000 W · 30분)", "<b>스피커 (800 W · 2시간)</b>", "선풍기 (40 W · 10시간)"], ans: 1,
           why: "<b>스피커</b>입니다.<br>" +
@@ -540,9 +562,69 @@
     });
   }
 
+  /* ---------------------------------------------------------
+     🔑 정답지 (선생님용) — worksheet.html?key
+     학생용과 **같은 SHEET 를 그대로** 읽는다. 정답을 따로 적어 두지
+     않으므로, 문항을 고치면 정답지도 저절로 따라온다.
+     표(tbl)만은 정답이 자료에 없어 keyAns 를 문항에 함께 적어 둔다.
+     --------------------------------------------------------- */
+  function keyAnswerHtml(c) {
+    var it = c.def;
+    if (it.type === "tbl") {
+      if (typeof it.keyAns === "string") return it.keyAns;
+      if (!it.keyAns) return "<i>실험실에서 읽은 값</i>";
+      return it.keyAns.map(function (row, ri) {
+        return it.rows[ri] + " — " + row.join(" / ");
+      }).join("<br>");
+    }
+    if (it.type === "text") return "<i>서술형</i> · " + stripTags(it.why || "");
+    return c.rightText ? c.rightText() : "—";
+  }
+
+  function buildKey() {
+    document.body.classList.add("keymode");
+    document.title = "소비 전력 학습지 정답지";
+    var top = document.querySelector(".top h1");
+    if (top) top.textContent = "🔑 소비 전력 학습지 — 정답지";
+
+    var host = document.getElementById("keySheet");
+    var cur = -1, list = null;
+    ctrls.forEach(function (c) {
+      if (c.step !== cur) {
+        cur = c.step;
+        host.appendChild(el("div", "kstep", SHEET[cur].step));
+        list = el("div", "klist");
+        host.appendChild(list);
+      }
+      var row = el("div", "krow");
+      row.appendChild(el("span", "kno", String(c.no)));
+      var body = el("div", "kbody");
+      body.appendChild(el("div", "kq", stripTags(c.def.q)));
+      body.appendChild(el("div", "ka", keyAnswerHtml(c)));
+      /* 서술형은 정답 자리에 이미 해설이 들어가 있어 두 번 쓰지 않는다. */
+      if (c.def.why && c.def.type !== "text") {
+        body.appendChild(el("div", "kwhy", stripTags(c.def.why)));
+      }
+      row.appendChild(body);
+      list.appendChild(row);
+    });
+
+    function toggle(id, cls) {
+      var box = document.getElementById(id);
+      box.addEventListener("change", function () {
+        document.body.classList.toggle(cls, box.checked);
+      });
+    }
+    toggle("kQ", "showq");
+    toggle("kWhy", "showwhy");
+    document.getElementById("kPrint").addEventListener("click", function () { window.print(); });
+  }
   build(); bind(); applyLockState();
 
+  if (/(^|[?&])key(=|&|$)/.test(location.search)) buildKey();
+
   window.ELSheet = {
+    buildKey: buildKey, keyAnswerHtml: keyAnswerHtml,
     ctrls: ctrls, score: score, makePdf: makePdf, SHEET: SHEET,
     isSubmitted: function () { return submitted; },
     forceSubmit: function (info) {
